@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全方位複利計算</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --primary-color: #1a73e8;
+            --text-color: #333;
+            --accent-color: #e8f0fe;
+        }
+
+        /* 深色風格 */
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --primary-color: #8ab4f8;
+            --text-color: #e8eaed;
+            --accent-color: #3c4043;
+        }
+
+        /* 自然綠風格 */
+        [data-theme="nature"] {
+            --bg-color: #f1f8e9;
+            --card-bg: #ffffff;
+            --primary-color: #2e7d32;
+            --text-color: #1b5e20;
+            --accent-color: #dcedc8;
+        }
+
+        body {
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        header {
+            max-width: 1200px;
+            margin: 0 auto 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .theme-switcher {
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 1px solid var(--primary-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+            cursor: pointer;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .card:hover { transform: translateY(-5px); }
+
+        h2 { margin-top: 0; font-size: 1.4em; border-left: 5px solid var(--primary-color); padding-left: 10px; }
+
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9em; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            box-sizing: border-box;
+        }
+
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            background: var(--accent-color);
+            border-radius: 8px;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        canvas { width: 100% !important; height: 200px !important; }
+    </style>
+</head>
+<body data-theme="default">
+
+<header>
+    <h1>📈 複利計算</h1>
+    <select class="theme-switcher" id="themeSelect">
+        <option value="default">🌐 現代科技藍</option>
+        <option value="dark">🌙 極致深色</option>
+        <option value="nature">🌿 森林自然綠</option>
+    </select>
+</header>
+
+<div class="container">
+    <div class="card">
+        <h2>單筆複利計算</h2>
+        <div class="input-group">
+            <label>初始本金 ($)</label>
+            <input type="number" id="p1" value="100000">
+        </div>
+        <div class="input-group">
+            <label>預期年利率 (%)</label>
+            <input type="number" id="r1" value="6">
+        </div>
+        <div class="input-group">
+            <label>投資年數</label>
+            <input type="number" id="t1" value="10">
+        </div>
+        <div class="result" id="res1"></div>
+        <canvas id="chart1"></canvas>
+    </div>
+
+    <div class="card">
+        <h2>定期定額計算</h2>
+        <div class="input-group">
+            <label>每月投入金額 ($)</label>
+            <input type="number" id="m2" value="10000">
+        </div>
+        <div class="input-group">
+            <label>年化報酬率 (%)</label>
+            <input type="number" id="r2" value="7">
+        </div>
+        <div class="input-group">
+            <label>投資年數</label>
+            <input type="number" id="t2" value="20">
+        </div>
+        <div class="result" id="res2"></div>
+        <canvas id="chart2"></canvas>
+    </div>
+
+    <div class="card">
+        <h2>資產目標反推</h2>
+        <div class="input-group">
+            <label>設定目標金額 ($)</label>
+            <input type="number" id="target3" value="10000000">
+        </div>
+        <div class="input-group">
+            <label>預期年投報率 (%)</label>
+            <input type="number" id="r3" value="7">
+        </div>
+        <div class="input-group">
+            <label>預計達成年數</label>
+            <input type="number" id="t3" value="25">
+        </div>
+        <div class="result" id="res3"></div>
+        <canvas id="chart3"></canvas>
+    </div>
+</div>
+
+<script>
+    let charts = {};
+    const fieldIds = ['p1', 'r1', 't1', 'm2', 'r2', 't2', 'target3', 'r3', 't3'];
+
+    window.onload = () => {
+        // 加載主題
+        const savedTheme = localStorage.getItem('app-theme') || 'default';
+        document.body.setAttribute('data-theme', savedTheme);
+        document.getElementById('themeSelect').value = savedTheme;
+
+        // 加載數值與綁定事件
+        fieldIds.forEach(id => {
+            const savedVal = localStorage.getItem(id);
+            if (savedVal) document.getElementById(id).value = savedVal;
+            document.getElementById(id).addEventListener('input', updateAll);
+        });
+
+        document.getElementById('themeSelect').addEventListener('change', (e) => {
+            const theme = e.target.value;
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('app-theme', theme);
+            updateAll(); // 重新渲染圖表顏色
+        });
+
+        updateAll();
+    };
+
+    function updateAll() {
+        // 儲存所有數據
+        fieldIds.forEach(id => localStorage.setItem(id, document.getElementById(id).value));
+
+        renderSingle();
+        renderRegular();
+        renderGoal();
+    }
+
+    function getThemeColor() {
+        return getComputedStyle(document.body).getPropertyValue('--primary-color').trim();
+    }
+
+    function renderSingle() {
+        const P = parseFloat(document.getElementById('p1').value) || 0;
+        const r = (parseFloat(document.getElementById('r1').value) || 0) / 100;
+        const t = parseInt(document.getElementById('t1').value) || 0;
+        let data = [];
+        for(let i=0; i<=t; i++) data.push((P * Math.pow(1+r, i)).toFixed(0));
+        
+        showResult('res1', data[data.length-1], data[data.length-1] - P);
+        drawChart('chart1', '資產估值', data);
+    }
+
+    function renderRegular() {
+        const M = parseFloat(document.getElementById('m2').value) || 0;
+        const rY = (parseFloat(document.getElementById('r2').value) || 0) / 100;
+        const rM = rY / 12;
+        const t = parseInt(document.getElementById('t2').value) || 0;
+        let data = [0];
+        for(let y=1; y<=t; y++) {
+            const val = M * ((Math.pow(1+rM, y*12) - 1) / rM) * (1+rM);
+            data.push(val.toFixed(0));
+        }
+        showResult('res2', data[data.length-1], data[data.length-1] - (M * 12 * t));
+        drawChart('chart2', '定期定額增長', data);
+    }
+
+    function renderGoal() {
+        const target = parseFloat(document.getElementById('target3').value) || 0;
+        const rY = (parseFloat(document.getElementById('r3').value) || 0) / 100;
+        const rM = rY / 12;
+        const t = parseInt(document.getElementById('t3').value) || 0;
+        const n = t * 12;
+        
+        let monthly = rM > 0 ? (target * rM) / ((Math.pow(1+rM, n) - 1) * (1+rM)) : target / n;
+        
+        document.getElementById('res3').innerHTML = `每月需投入：<strong>$${Math.ceil(monthly).toLocaleString()}</strong>`;
+        
+        let data = [];
+        for(let y=0; y<=t; y++) {
+            const val = monthly * ((Math.pow(1+rM, y*12) - 1) / rM) * (1+rM);
+            data.push(val.toFixed(0));
+        }
+        drawChart('chart3', '目標進度預測', data);
+    }
+
+    function showResult(id, final, profit) {
+        document.getElementById(id).innerHTML = `
+            期末金額：<strong>$${Number(final).toLocaleString()}</strong><br>
+            預估獲利：<span style="color:var(--primary-color)">$${Number(profit).toLocaleString()}</span>
+        `;
+    }
+
+    function drawChart(id, label, data) {
+        const ctx = document.getElementById(id).getContext('2d');
+        if (charts[id]) charts[id].destroy();
+        charts[id] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: data.length}, (_, i) => `${i}Y`),
+                datasets: [{
+                    label: label,
+                    data: data,
+                    borderColor: getThemeColor(),
+                    backgroundColor: getThemeColor() + '22',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 2
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { grid: { display: false } } }
+            }
+        });
+    }
+</script>
+</body>
+</html>
