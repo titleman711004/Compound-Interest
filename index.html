@@ -12,24 +12,25 @@
             --primary-color: #1a73e8;
             --text-color: #333;
             --accent-color: #e8f0fe;
+            --footer-text: #666;
         }
 
-        /* 深色風格 */
         [data-theme="dark"] {
             --bg-color: #1a1a1a;
             --card-bg: #2d2d2d;
             --primary-color: #8ab4f8;
             --text-color: #e8eaed;
             --accent-color: #3c4043;
+            --footer-text: #999;
         }
 
-        /* 自然綠風格 */
         [data-theme="nature"] {
             --bg-color: #f1f8e9;
             --card-bg: #ffffff;
             --primary-color: #2e7d32;
             --text-color: #1b5e20;
             --accent-color: #dcedc8;
+            --footer-text: #558b2f;
         }
 
         body {
@@ -39,10 +40,14 @@
             margin: 0;
             padding: 20px;
             transition: all 0.3s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         header {
             max-width: 1200px;
+            width: 100%;
             margin: 0 auto 20px;
             display: flex;
             justify-content: space-between;
@@ -64,6 +69,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 20px;
+            flex-grow: 1;
         }
 
         .card {
@@ -75,7 +81,6 @@
         }
 
         .card:hover { transform: translateY(-5px); }
-
         h2 { margin-top: 0; font-size: 1.4em; border-left: 5px solid var(--primary-color); padding-left: 10px; }
 
         .input-group { margin-bottom: 15px; }
@@ -100,6 +105,14 @@
         }
 
         canvas { width: 100% !important; height: 200px !important; }
+
+        footer {
+            text-align: center;
+            padding: 40px 0 20px;
+            color: var(--footer-text);
+            font-size: 0.9em;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body data-theme="default">
@@ -169,17 +182,19 @@
     </div>
 </div>
 
+<footer>
+    2026 Copyright © Titleman
+</footer>
+
 <script>
     let charts = {};
     const fieldIds = ['p1', 'r1', 't1', 'm2', 'r2', 't2', 'target3', 'r3', 't3'];
 
     window.onload = () => {
-        // 加載主題
         const savedTheme = localStorage.getItem('app-theme') || 'default';
         document.body.setAttribute('data-theme', savedTheme);
         document.getElementById('themeSelect').value = savedTheme;
 
-        // 加載數值與綁定事件
         fieldIds.forEach(id => {
             const savedVal = localStorage.getItem(id);
             if (savedVal) document.getElementById(id).value = savedVal;
@@ -190,16 +205,14 @@
             const theme = e.target.value;
             document.body.setAttribute('data-theme', theme);
             localStorage.setItem('app-theme', theme);
-            updateAll(); // 重新渲染圖表顏色
+            updateAll(); 
         });
 
         updateAll();
     };
 
     function updateAll() {
-        // 儲存所有數據
         fieldIds.forEach(id => localStorage.setItem(id, document.getElementById(id).value));
-
         renderSingle();
         renderRegular();
         renderGoal();
@@ -215,7 +228,6 @@
         const t = parseInt(document.getElementById('t1').value) || 0;
         let data = [];
         for(let i=0; i<=t; i++) data.push((P * Math.pow(1+r, i)).toFixed(0));
-        
         showResult('res1', data[data.length-1], data[data.length-1] - P);
         drawChart('chart1', '資產估值', data);
     }
@@ -240,11 +252,8 @@
         const rM = rY / 12;
         const t = parseInt(document.getElementById('t3').value) || 0;
         const n = t * 12;
-        
         let monthly = rM > 0 ? (target * rM) / ((Math.pow(1+rM, n) - 1) * (1+rM)) : target / n;
-        
         document.getElementById('res3').innerHTML = `每月需投入：<strong>$${Math.ceil(monthly).toLocaleString()}</strong>`;
-        
         let data = [];
         for(let y=0; y<=t; y++) {
             const val = monthly * ((Math.pow(1+rM, y*12) - 1) / rM) * (1+rM);
@@ -254,10 +263,7 @@
     }
 
     function showResult(id, final, profit) {
-        document.getElementById(id).innerHTML = `
-            期末金額：<strong>$${Number(final).toLocaleString()}</strong><br>
-            預估獲利：<span style="color:var(--primary-color)">$${Number(profit).toLocaleString()}</span>
-        `;
+        document.getElementById(id).innerHTML = `期末金額：<strong>$${Number(final).toLocaleString()}</strong><br>預估獲利：<span style="color:var(--primary-color)">$${Number(profit).toLocaleString()}</span>`;
     }
 
     function drawChart(id, label, data) {
